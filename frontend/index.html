@@ -336,16 +336,21 @@
             </div>
 
             <!-- Action buttons -->
-            <div class="space-y-3">
-                <button type="button" onclick="generateAndSaveInvoice()" 
-                        class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-brand-500/20 transition-all duration-300 flex items-center justify-center gap-3">
-                    <i class="fa-solid fa-paper-plane text-lg"></i>
-                    Action Button
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button type="button" onclick="saveAndDownloadPDF()" 
+                        class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-brand-500/20 transition-all duration-300 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-file-pdf text-lg"></i>
+                    Save & Download PDF
                 </button>
-                <p class="text-[11px] text-center text-slate-400 font-medium">
-                    Calculates, stores record in database, downloads PDF, and opens WhatsApp sharing.
-                </p>
+                <button type="button" onclick="saveAndShareWhatsApp()" 
+                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-emerald-600/20 transition-all duration-300 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-whatsapp text-lg"></i>
+                    Share on WhatsApp
+                </button>
             </div>
+            <p class="text-[11px] text-center text-slate-400 font-medium mt-2">
+                Click <strong>Save & Download PDF</strong> to generate & save the PDF locally. Click <strong>Share on WhatsApp</strong> to save & open direct chat with the customer.
+            </p>
 
         </section>
 
@@ -818,8 +823,8 @@
             return true;
         }
 
-        // Generate and Save Invoice Flow
-        async function generateAndSaveInvoice() {
+        // Save and Download PDF Flow
+        async function saveAndDownloadPDF() {
             const data = collectFormData();
             if (!validateInvoicePayload(data)) return;
 
@@ -829,7 +834,6 @@
             }
 
             try {
-                // Post to API to save record and generate sequence ID
                 const response = await fetch(`${apiHost}/api/invoices`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -838,10 +842,47 @@
 
                 if (response.ok) {
                     const savedInvoice = await response.json();
-                    showToast("Invoice saved to database!");
+                    showToast("Invoice saved successfully!");
                     
-                    // Automatically open the View Invoice modal to allow safe WhatsApp sharing & PDF downloading
-                    viewInvoiceDetails(savedInvoice.id);
+                    // Download PDF directly
+                    downloadPDF(savedInvoice);
+                    
+                    // Reset input card and reload history list
+                    resetForm();
+                    loadHistoryList();
+                } else {
+                    const err = await response.json();
+                    showToast(`Failed to save invoice: ${err.detail || "Unknown error"}`, "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("API Connection failed. Could not save invoice.", "error");
+            }
+        }
+
+        // Save and Open WhatsApp Chat Flow (No PDF download to prevent collisions/crashes)
+        async function saveAndShareWhatsApp() {
+            const data = collectFormData();
+            if (!validateInvoicePayload(data)) return;
+
+            if (!isOnline) {
+                showToast("API Server is offline. Please start the FastAPI backend to save invoices.", "error");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiHost}/api/invoices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const savedInvoice = await response.json();
+                    showToast("Invoice saved successfully!");
+                    
+                    // Open WhatsApp Chat directly
+                    shareInvoiceOnWhatsApp(savedInvoice);
                     
                     // Reset input card and reload history list
                     resetForm();
