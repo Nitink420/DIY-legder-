@@ -78,28 +78,26 @@
             to { transform: translateY(0); opacity: 1; }
         }
         @media print {
-            header, #toast-container, main, footer, .glass-card, button, p {
-                display: none !important;
-            }
             body > *:not(#pdf-rendering-container) {
                 display: none !important;
+                visibility: hidden !important;
             }
             #pdf-rendering-container {
                 display: block !important;
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
+                position: static !important;
                 width: 100% !important;
                 height: auto !important;
                 background: #ffffff !important;
-                color: #1e293b !important;
                 opacity: 1 !important;
                 visibility: visible !important;
                 z-index: 9999999 !important;
+                pointer-events: auto !important;
+            }
+            #pdf-rendering-container * {
+                visibility: visible !important;
             }
             body {
                 background: #ffffff !important;
-                color: #000000 !important;
                 margin: 0 !important;
                 padding: 0 !important;
             }
