@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrapK Ventures - B2B Invoice Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2pdf.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#10b981', // Emerald
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        navy: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .badge-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .6; transform: scale(1.05); }
+        }
+        .toast-slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-1rem); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col font-sans">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Header Section -->
+    <header class="bg-navy-900 text-white shadow-md sticky top-0 z-40 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
+            <div class="flex items-center space-x-3">
+                <div class="h-10 w-10 bg-white rounded-xl overflow-hidden flex items-center justify-center shadow-lg border border-slate-100 p-0.5">
+                    <img id="header-logo" alt="ScrapK Logo" class="h-full w-full object-contain">
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white to-brand-100 bg-clip-text text-transparent">
+                        ScrapK Ventures
+                    </h1>
+                    <p class="text-xs text-brand-100 font-medium">B2B Invoice Engine</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- API Connection Badge -->
+                <div id="connection-badge" class="flex items-center space-x-2 bg-navy-800 border border-slate-700/80 px-3.5 py-1.5 rounded-full text-xs font-semibold">
+                    <span class="relative flex h-2 w-2">
+                        <span class="badge-pulse absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span id="badge-dot" class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+                    </span>
+                    <span id="badge-text" class="text-slate-300">Checking API Engine...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Column: Input Form (lg:col-span-7) -->
+        <section class="lg:col-span-7 space-y-6">
+            
+            <!-- Customer Details Card -->
+            <div class="glass-card rounded-2xl p-6 shadow-sm space-y-4">
+                <h3 class="text-lg font-bold text-navy-800 flex items-center gap-2.5 pb-3 border-b border-slate-100">
+                    <i class="fa-solid fa-circle-user text-brand-500"></i>
+                    Customer Details
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group md:col-span-2">
+                        <label for="customer-name" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                            Customer / Pickup Name <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative rounded-xl shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-building-user"></i>
+                            </div>
+                            <input type="text" id="customer-name" required
+                                   class="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition duration-200" 
+                                   placeholder="e.g. ABC Metals Ltd." oninput="triggerLiveCalc()">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customer-phone" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                            Phone Number
+                        </label>
+                        <div class="relative rounded-xl shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-phone"></i>
+                            </div>
+                            <input type="text" id="customer-phone" 
+                                   class="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition duration-200" 
+                                   placeholder="e.g. +91 9876543210" oninput="triggerLiveCalc()">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customer-address" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                            Address
+                        </label>
+                        <div class="relative rounded-xl shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-location-dot"></i>
+                            </div>
+                            <input type="text" id="customer-address" 
+                                   class="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition duration-200" 
+                                   placeholder="e.g. New Delhi, India" oninput="triggerLiveCalc()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scrap Items Entry Section -->
+            <div class="glass-card rounded-2xl p-6 shadow-sm space-y-4">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                    <h3 class="text-lg font-bold text-navy-800 flex items-center gap-2.5">
+                        <i class="fa-solid fa-cubes text-brand-500"></i>
+                        Scrap Items Details
+                    </h3>
+                    <span id="items-count-badge" class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-xs font-bold">
+                        1 Item
+                    </span>
+                </div>
+
+                <!-- Dynamic Item Cards Container -->
+                <div id="items-container" class="space-y-4 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                    <!-- Default Initial Card -->
+                    <div class="item-card bg-slate-50 border border-slate-200 rounded-xl p-4 relative group transition-all duration-200 hover:border-brand-500/30">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <!-- Scrap Type -->
+                            <div class="md:col-span-6">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Scrap Type *</label>
+                                <input type="text" required class="item-type w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand-500" 
+                                       placeholder="e.g. Iron Scrap" list="scrap-suggestions" oninput="triggerLiveCalc()">
+                            </div>
+                            <!-- Weight -->
+                            <div class="md:col-span-3">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Weight (kg) *</label>
+                                <div class="relative">
+                                    <input type="number" required step="0.01" min="0.01" class="item-weight w-full pl-3 pr-8 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-0 focus:outline-none focus:border-brand-500" 
+                                           placeholder="0.00" oninput="triggerLiveCalc()">
+                                    <span class="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400 pointer-events-none">kg</span>
+                                </div>
+                            </div>
+                            <!-- Rate -->
+                            <div class="md:col-span-3">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Rate / kg (₹) *</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-[10px] text-slate-400 pointer-events-none">₹</span>
+                                    <input type="number" required step="0.01" min="0.01" class="item-rate w-full pl-6 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-0 focus:outline-none focus:border-brand-500" 
+                                           placeholder="0.00" oninput="triggerLiveCalc()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <datalist id="scrap-suggestions">
+                    <option value="Iron Scrap"></option>
+                    <option value="Copper Wire"></option>
+                    <option value="Aluminum Cans"></option>
+                    <option value="Brass Valve"></option>
+                    <option value="Lead Batteries"></option>
+                    <option value="Steel Channels"></option>
+                    <option value="Plastic Shredded"></option>
+                    <option value="Cardboard Boxes"></option>
+                </datalist>
+
+                <!-- Add Button -->
+                <button type="button" onclick="addItemCard()" 
+                        class="w-full py-3 border-2 border-dashed border-slate-200 text-slate-500 rounded-xl hover:border-brand-500 hover:text-brand-500 text-sm font-semibold flex items-center justify-center gap-2 transition duration-200">
+                    <i class="fa-solid fa-plus"></i> Add Scrap Item
+                </button>
+            </div>
+
+            <!-- Bill Type & GST Settings -->
+            <div class="glass-card rounded-2xl p-6 shadow-sm space-y-4">
+                <h3 class="text-lg font-bold text-navy-800 flex items-center gap-2.5 pb-3 border-b border-slate-100">
+                    <i class="fa-solid fa-percentage text-brand-500"></i>
+                    Bill Configuration
+                </h3>
+
+                <!-- GST Toggle Switch -->
+                <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-slate-700">Apply GST</span>
+                        <span class="text-xs text-slate-400">Toggle ON to generate a GST Tax Invoice, OFF for Normal Business Bill</span>
+                    </div>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="apply-gst" class="sr-only peer" onchange="toggleGSTSettings()">
+                        <div class="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+                    </label>
+                </div>
+
+                <!-- Expanded GST configurations -->
+                <div id="gst-sub-config" class="hidden transition-all duration-300 ease-in-out space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="gst-percent" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">GST Percentage</label>
+                            <select id="gst-percent" class="block w-full py-3 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition duration-200" onchange="triggerLiveCalc()">
+                                <option value="5">5% GST</option>
+                                <option value="12">12% GST</option>
+                                <option value="18" selected>18% GST (Standard)</option>
+                                <option value="28">28% GST</option>
+                            </select>
+                        </div>
+
+                        <!-- Tax Inclusive Checkbox -->
+                        <div class="flex items-center h-full pt-6 md:pt-8">
+                            <input type="checkbox" id="tax-inclusive" class="w-4 h-4 text-brand-500 border-slate-300 rounded focus:ring-brand-500" onchange="triggerLiveCalc()">
+                            <label for="tax-inclusive" class="ml-3 text-sm font-semibold text-slate-700 cursor-pointer select-none">
+                                Tax is Inclusive in Rate
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fare Input (Always Visible but Optional) -->
+                <div class="form-group">
+                    <label for="external-fare" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        External Fare / Labour / Transport Charge (₹)
+                    </label>
+                    <div class="relative rounded-xl shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <span>₹</span>
+                        </div>
+                        <input type="number" id="external-fare" step="0.01" min="0"
+                               class="block w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition duration-200" 
+                               placeholder="0.00" oninput="triggerLiveCalc()">
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Live Totals & Actions (lg:col-span-5) -->
+        <section class="lg:col-span-5 space-y-6">
+            
+            <!-- Live Totals Panel -->
+            <div class="bg-navy-900 text-white rounded-2xl p-6 shadow-xl space-y-6 relative overflow-hidden">
+                <!-- Decorative Circle -->
+                <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <h3 class="text-lg font-bold text-white flex items-center gap-2.5 pb-3 border-b border-slate-800">
+                    <i class="fa-solid fa-calculator text-brand-500"></i>
+                    Live Invoice Summary
+                </h3>
+
+                <div class="space-y-4 text-sm font-medium">
+                    <div class="flex justify-between text-slate-400">
+                        <span>Total Scrap Value:</span>
+                        <span id="subtotal-val" class="text-white font-semibold">₹0.00</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>Taxable Value:</span>
+                        <span id="taxable-val" class="text-white font-semibold">₹0.00</span>
+                    </div>
+                    <div id="gst-val-row" class="flex justify-between text-slate-400 hidden">
+                        <span id="gst-label">GST:</span>
+                        <span id="gst-val" class="text-white font-semibold">₹0.00</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>External Fare / Labour:</span>
+                        <span id="fare-val" class="text-white font-semibold">₹0.00</span>
+                    </div>
+                    <div class="pt-4 border-t border-slate-800 flex justify-between items-baseline">
+                        <span class="text-base font-extrabold text-brand-100">Grand Total:</span>
+                        <span id="grand-total-val" class="text-2xl font-black text-white tracking-tight">₹0.00</span>
+                    </div>
+                </div>
+
+                <div class="bg-navy-800 rounded-xl p-3 border border-slate-800 flex justify-between items-center text-xs">
+                    <span class="text-slate-400">Bill Type:</span>
+                    <span id="live-bill-type" class="font-bold uppercase tracking-wider text-brand-500 bg-brand-500/10 px-2 py-0.5 rounded">NORMAL BILL</span>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="space-y-3">
+                <button type="button" onclick="generateAndSaveInvoice()" 
+                        class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-brand-500/20 transition-all duration-300 flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-file-pdf text-lg"></i>
+                    Generate Official Invoice
+                </button>
+                <p class="text-[11px] text-center text-slate-400 font-medium">
+                    Calculates, stores record in SQLite database, and downloads corporate PDF invoice.
+                </p>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- History Panel -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 w-full">
+        <div class="glass-card rounded-2xl p-6 shadow-sm space-y-4 w-full">
+            <h3 class="text-lg font-bold text-navy-800 flex items-center gap-2.5 pb-3 border-b border-slate-100">
+                <i class="fa-solid fa-clock-rotate-left text-brand-500"></i>
+                Saved Invoices History
+            </h3>
+            
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="min-w-full divide-y divide-slate-200 text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-xs">
+                        <tr>
+                            <th class="px-6 py-3">Date</th>
+                            <th class="px-6 py-3">Invoice No</th>
+                            <th class="px-6 py-3">Customer Name</th>
+                            <th class="px-6 py-3 text-center">Type</th>
+                            <th class="px-6 py-3 text-right">GST %</th>
+                            <th class="px-6 py-3 text-right">Grand Total</th>
+                            <th class="px-6 py-3 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-rows" class="divide-y divide-slate-100 font-medium text-slate-700">
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-slate-400">
+                                Loading invoice history...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-navy-900 border-t border-slate-800 text-slate-500 text-xs py-6 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+            <p class="font-semibold text-slate-400">&copy; 2026 ScrapK Ventures Pvt. Ltd. All rights reserved.</p>
+            <p>B2B Corporate Invoice Panel | Designed for Circular Material Logistics</p>
+        </div>
+    </footer>
+
+    <!-- View Invoice Modal -->
+    <div id="view-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden px-4">
+        <div class="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl transition-all transform scale-95 duration-300 ease-out" id="modal-card">
+            <!-- Modal Header -->
+            <div class="bg-navy-900 text-white px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-receipt text-brand-500 text-lg"></i>
+                    <h3 class="font-extrabold text-base" id="modal-invoice-no">SKV-GST-2026-0000</h3>
+                </div>
+                <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-white transition duration-200">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 overflow-y-auto max-h-[70vh] space-y-6">
+                <!-- Invoice Info Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
+                    <div>
+                        <p class="text-slate-400 font-semibold mb-1">CUSTOMER / COMPANY</p>
+                        <p class="text-navy-900 font-extrabold text-sm uppercase" id="modal-customer-name">-</p>
+                        <p class="text-slate-500 mt-1" id="modal-customer-meta">-</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 font-semibold mb-1">TRANSACTION DETAILS</p>
+                        <p><span class="text-slate-500">Invoice Date:</span> <strong class="text-slate-700" id="modal-date">-</strong></p>
+                        <p class="mt-1"><span class="text-slate-500">Bill Type:</span> <strong class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded text-[10px] uppercase font-bold" id="modal-bill-type">-</strong></p>
+                    </div>
+                </div>
+
+                <!-- Items list -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Material breakdown</h4>
+                    <div class="border border-slate-100 rounded-xl overflow-x-auto custom-scrollbar">
+                        <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                            <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                <tr>
+                                    <th class="px-4 py-2">Sr.</th>
+                                    <th class="px-4 py-2">Scrap Type</th>
+                                    <th class="px-4 py-2 text-right">Weight (kg)</th>
+                                    <th class="px-4 py-2 text-right">Rate / kg</th>
+                                    <th class="px-4 py-2 text-right">Total (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-items" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Totals Grid -->
+                <div class="flex justify-end">
+                    <div class="w-full md:w-1/2 space-y-2 border-t border-slate-100 pt-3 text-xs">
+                        <div class="flex justify-between text-slate-500 font-semibold">
+                            <span>Subtotal:</span>
+                            <span id="modal-subtotal">₹0.00</span>
+                        </div>
+                        <div class="flex justify-between text-slate-500 font-semibold" id="modal-tax-row">
+                            <span id="modal-tax-label">GST:</span>
+                            <span id="modal-tax-val">₹0.00</span>
+                        </div>
+                        <div class="flex justify-between text-slate-500 font-semibold">
+                            <span>Labour / Transport Fare:</span>
+                            <span id="modal-fare">₹0.00</span>
+                        </div>
+                        <div class="flex justify-between text-sm font-extrabold text-navy-900 border-t border-slate-200 pt-2">
+                            <span>Grand Total:</span>
+                            <span id="modal-grand" class="text-brand-600 font-black">₹0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-50 border-t border-slate-100 px-4 sm:px-6 py-4 flex flex-wrap gap-3 justify-between items-center">
+                <button type="button" onclick="closeModal()" 
+                        class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition">
+                    Close
+                </button>
+                <div class="flex space-x-2">
+                    <button type="button" id="modal-btn-whatsapp" 
+                            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition">
+                        <i class="fa-brands fa-whatsapp"></i> Share on WhatsApp
+                    </button>
+                    <button type="button" id="modal-btn-download" 
+                            class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-file-pdf"></i> Download PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden elements for PDF Generation -->
+    <div id="pdf-rendering-container" style="position: absolute; left: -9999px; top: -9999px; width: 750px;"></div>
+
+    <script>
+        const logoBase64 = "data:image/jpeg;base64,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";
+        // Setup API Host
+        const apiHost = window.location.origin.includes('5500') || (window.location.origin.includes('localhost') && !window.location.origin.includes('8000'))
+            ? 'http://127.0.0.1:8000'
+            : '';
+
+        let isOnline = false;
+        let debounceTimer;
+        let loadedInvoicesGlobal = [];
+
+        // Toast notifications logic
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast-slide-in flex items-center space-x-3 p-4 rounded-xl shadow-lg border text-sm max-w-sm pointer-events-auto bg-white transition duration-300`;
+            
+            let icon = '';
+            if (type === 'success') {
+                toast.classList.add('border-emerald-100', 'text-slate-800');
+                icon = '<i class="fa-solid fa-circle-check text-emerald-500 text-lg"></i>';
+            } else {
+                toast.classList.add('border-rose-100', 'text-slate-800');
+                icon = '<i class="fa-solid fa-circle-exclamation text-rose-500 text-lg"></i>';
+            }
+
+            toast.innerHTML = `
+                ${icon}
+                <span class="font-semibold text-slate-700">${message}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transform', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Verify backend status on startup
+        async function checkServerStatus() {
+            try {
+                const response = await fetch(`${apiHost}/api/invoices`, { method: 'GET' });
+                // If endpoint returns status or parses successfully, API is connected
+                if (response.ok) {
+                    setServerStatus(true);
+                } else {
+                    setServerStatus(false);
+                }
+            } catch (e) {
+                setServerStatus(false);
+            }
+        }
+
+        function setServerStatus(online) {
+            isOnline = online;
+            const badge = document.getElementById('connection-badge');
+            const dot = document.getElementById('badge-dot');
+            const text = document.getElementById('badge-text');
+
+            if (online) {
+                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-brand-500";
+                badge.className = "flex items-center space-x-2 bg-navy-800 border border-slate-700/80 px-3.5 py-1.5 rounded-full text-xs font-semibold text-brand-500";
+                text.innerText = "API Connected";
+            } else {
+                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-400";
+                badge.className = "flex items-center space-x-2 bg-navy-800 border border-slate-700/80 px-3.5 py-1.5 rounded-full text-xs font-semibold text-amber-400";
+                text.innerText = "API Server Offline";
+            }
+        }
+
+        // Dynamic expansion for GST Settings
+        function toggleGSTSettings() {
+            const applyGST = document.getElementById('apply-gst').checked;
+            const subConfig = document.getElementById('gst-sub-config');
+            const gstRow = document.getElementById('gst-val-row');
+            
+            if (applyGST) {
+                subConfig.classList.remove('hidden');
+                gstRow.classList.remove('hidden');
+            } else {
+                subConfig.classList.add('hidden');
+                gstRow.classList.add('hidden');
+            }
+            triggerLiveCalc();
+        }
+
+        // Add/Remove cards dynamically
+        function addItemCard() {
+            const container = document.getElementById('items-container');
+            const cardCount = container.querySelectorAll('.item-card').length + 1;
+            
+            const cardHTML = `
+                <div class="item-card bg-slate-50 border border-slate-200 rounded-xl p-4 relative group transition-all duration-200 hover:border-brand-500/30">
+                    <button type="button" onclick="removeItemCard(this)" 
+                            class="absolute top-2 right-2 text-slate-400 hover:text-rose-500 transition-colors focus:outline-none" title="Remove Item">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                        <!-- Scrap Type -->
+                        <div class="md:col-span-6">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Scrap Type *</label>
+                            <input type="text" required class="item-type w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand-500" 
+                                   placeholder="e.g. Copper Wire" list="scrap-suggestions" oninput="triggerLiveCalc()">
+                        </div>
+                        <!-- Weight -->
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Weight (kg) *</label>
+                            <div class="relative">
+                                <input type="number" required step="0.01" min="0.01" class="item-weight w-full pl-3 pr-8 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-0 focus:outline-none focus:border-brand-500" 
+                                       placeholder="0.00" oninput="triggerLiveCalc()">
+                                <span class="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400 pointer-events-none">kg</span>
+                            </div>
+                        </div>
+                        <!-- Rate -->
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Rate / kg (₹) *</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 text-[10px] text-slate-400 pointer-events-none">₹</span>
+                                <input type="number" required step="0.01" min="0.01" class="item-rate w-full pl-6 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-0 focus:outline-none focus:border-brand-500" 
+                                       placeholder="0.00" oninput="triggerLiveCalc()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', cardHTML);
+            updateBadgeCount();
+            triggerLiveCalc();
+        }
+
+        function removeItemCard(button) {
+            const card = button.closest('.item-card');
+            card.remove();
+            updateBadgeCount();
+            triggerLiveCalc();
+        }
+
+        function updateBadgeCount() {
+            const count = document.getElementById('items-container').querySelectorAll('.item-card').length;
+            document.getElementById('items-count-badge').innerText = `${count} ${count === 1 ? 'Item' : 'Items'}`;
+        }
+
+        // Collect Form Payload
+        function collectFormData(requiredOnly = false) {
+            const customerName = document.getElementById('customer-name').value.trim();
+            const customerPhone = document.getElementById('customer-phone').value.trim();
+            const customerAddress = document.getElementById('customer-address').value.trim();
+            const applyGST = document.getElementById('apply-gst').checked;
+            const gstPercent = applyGST ? (parseFloat(document.getElementById('gst-percent').value) || 0) : 0;
+            const taxInclusive = applyGST ? document.getElementById('tax-inclusive').checked : false;
+            const externalFare = parseFloat(document.getElementById('external-fare').value) || 0;
+
+            const items = [];
+            document.querySelectorAll('.item-card').forEach(card => {
+                const scrapType = card.querySelector('.item-type').value.trim();
+                const weightInput = card.querySelector('.item-weight').value;
+                const rateInput = card.querySelector('.item-rate').value;
+
+                // Validate item
+                if (scrapType || weightInput || rateInput) {
+                    items.push({
+                        scrap_type: scrapType,
+                        weight: parseFloat(weightInput) || 0,
+                        rate: parseFloat(rateInput) || 0
+                    });
+                }
+            });
+
+            return {
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                customer_address: customerAddress,
+                apply_gst: applyGST,
+                gst_percent: gstPercent,
+                tax_inclusive: taxInclusive,
+                external_fare: externalFare,
+                items: items
+            };
+        }
+
+        // Live Calculations with Debouncing
+        function triggerLiveCalc() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(callCalculationAPI, 250);
+        }
+
+        async function callCalculationAPI() {
+            const data = collectFormData();
+            
+            // Check if we have at least one valid item to process calculations
+            const hasValidItem = data.items.some(item => item.scrap_type && item.weight > 0 && item.rate > 0);
+            if (!hasValidItem) {
+                resetTotalsUI(data.external_fare, data.apply_gst);
+                return;
+            }
+
+            if (!isOnline) {
+                // If offline, do a direct client calculation fallback
+                calculateTotalsLocally(data);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiHost}/api/calculate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    updateTotalsUI(result);
+                } else {
+                    const err = await response.json();
+                    console.error("API error response: ", err);
+                    calculateTotalsLocally(data);
+                }
+            } catch (e) {
+                console.warn("Unable to connect to API, using client fallback calculations: ", e);
+                calculateTotalsLocally(data);
+            }
+        }
+
+        // Client Fallback calculation logic
+        function calculateTotalsLocally(data) {
+            let subtotal = 0;
+            data.items.forEach(item => {
+                subtotal += (item.weight * item.rate) || 0;
+            });
+
+            let taxableValue = subtotal;
+            let gstAmount = 0;
+            let grandTotal = 0;
+
+            if (data.apply_gst) {
+                if (data.tax_inclusive) {
+                    taxableValue = subtotal / (1 + (data.gst_percent / 100));
+                    gstAmount = subtotal - taxableValue;
+                    grandTotal = subtotal + data.external_fare;
+                } else {
+                    taxableValue = subtotal;
+                    gstAmount = subtotal * (data.gst_percent / 100);
+                    grandTotal = subtotal + gstAmount + data.external_fare;
+                }
+            } else {
+                grandTotal = subtotal + data.external_fare;
+            }
+
+            updateTotalsUI({
+                subtotal: subtotal,
+                taxable_value: taxableValue,
+                gst_amount: gstAmount,
+                external_fare: data.external_fare,
+                grand_total: grandTotal,
+                bill_type: data.apply_gst ? "GST_INVOICE" : "NORMAL_BILL",
+                gst_applied: data.apply_gst
+            });
+        }
+
+        function resetTotalsUI(fare, gstApplied) {
+            document.getElementById('subtotal-val').innerText = '₹0.00';
+            document.getElementById('taxable-val').innerText = '₹0.00';
+            document.getElementById('gst-val').innerText = '₹0.00';
+            document.getElementById('fare-val').innerText = `₹${fare.toFixed(2)}`;
+            document.getElementById('grand-total-val').innerText = `₹${fare.toFixed(2)}`;
+            document.getElementById('live-bill-type').innerText = gstApplied ? "GST INVOICE" : "NORMAL BILL";
+            document.getElementById('live-bill-type').className = gstApplied 
+                ? "font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded"
+                : "font-bold uppercase tracking-wider text-slate-500 bg-slate-500/10 px-2 py-0.5 rounded";
+        }
+
+        function updateTotalsUI(result) {
+            document.getElementById('subtotal-val').innerText = `₹${result.subtotal.toFixed(2)}`;
+            document.getElementById('taxable-val').innerText = `₹${result.taxable_value.toFixed(2)}`;
+            
+            const gstLabel = document.getElementById('gst-label');
+            const gstVal = document.getElementById('gst-val');
+            
+            if (result.gst_applied) {
+                const gstPercent = document.getElementById('gst-percent').value;
+                const isInclusive = document.getElementById('tax-inclusive').checked;
+                gstLabel.innerText = `GST (${gstPercent}%${isInclusive ? ' Incl.' : ''}):`;
+                gstVal.innerText = `₹${result.gst_amount.toFixed(2)}`;
+            } else {
+                gstVal.innerText = '₹0.00';
+            }
+
+            document.getElementById('fare-val').innerText = `₹${result.external_fare.toFixed(2)}`;
+            document.getElementById('grand-total-val').innerText = `₹${result.grand_total.toFixed(2)}`;
+            
+            const billTypeBadge = document.getElementById('live-bill-type');
+            if (result.bill_type === "GST_INVOICE") {
+                billTypeBadge.innerText = "GST INVOICE";
+                billTypeBadge.className = "font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded";
+            } else {
+                billTypeBadge.innerText = "NORMAL BILL";
+                billTypeBadge.className = "font-bold uppercase tracking-wider text-slate-500 bg-slate-500/10 px-2 py-0.5 rounded";
+            }
+        }
+
+        // Form Validation Before Saving
+        function validateInvoicePayload(data) {
+            if (!data.customer_name) {
+                showToast("Customer Name is required.", "error");
+                document.getElementById('customer-name').focus();
+                return false;
+            }
+            if (data.items.length === 0) {
+                showToast("Please add at least one scrap item.", "error");
+                return false;
+            }
+            for (let i = 0; i < data.items.length; i++) {
+                const item = data.items[i];
+                if (!item.scrap_type) {
+                    showToast(`Scrap Type is required on Row ${i+1}.`, "error");
+                    return false;
+                }
+                if (item.weight <= 0) {
+                    showToast(`Weight must be a positive number on Row ${i+1}.`, "error");
+                    return false;
+                }
+                if (item.rate <= 0) {
+                    showToast(`Rate per kg must be a positive number on Row ${i+1}.`, "error");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Generate and Save Invoice Flow
+        async function generateAndSaveInvoice() {
+            const data = collectFormData();
+            if (!validateInvoicePayload(data)) return;
+
+            if (!isOnline) {
+                showToast("API Server is offline. Please start the FastAPI backend to save invoices.", "error");
+                return;
+            }
+
+            try {
+                // Post to API to save record and generate sequence ID
+                const response = await fetch(`${apiHost}/api/invoices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const savedInvoice = await response.json();
+                    showToast("Invoice saved to database!");
+                    
+                    // Render the hidden HTML template and invoke pdf generation
+                    downloadPDF(savedInvoice);
+                    
+                    // Reset input card and reload history list
+                    resetForm();
+                    loadHistoryList();
+                } else {
+                    const err = await response.json();
+                    showToast(`Failed to save invoice: ${err.detail || "Unknown error"}`, "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("API Connection failed. Could not save invoice.", "error");
+            }
+        }
+
+        // Re-download past invoice from history
+        async function downloadInvoiceAgain(invoiceId) {
+            try {
+                const response = await fetch(`${apiHost}/api/invoices/${invoiceId}`);
+                if (response.ok) {
+                    const invoice = await response.json();
+                    downloadPDF(invoice);
+                    showToast(`Downloading PDF for ${invoice.invoice_number}`);
+                } else {
+                    showToast("Failed to fetch invoice details.", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Network error. Cannot download invoice.", "error");
+            }
+        }
+
+        // Corporate PDF generation structure
+        function downloadPDF(invoice) {
+            const container = document.getElementById('pdf-rendering-container');
+            container.innerHTML = ''; // Clear prior templates
+            
+            // Build item rows with premium zebra striping and compact spacing
+            let itemRows = '';
+            invoice.items.forEach((item, index) => {
+                const rowBg = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+                itemRows += `
+                    <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${rowBg};">
+                        <td style="padding: 7px 8px; text-align: center; font-size: 10px; color: #64748b;">${index + 1}</td>
+                        <td style="padding: 7px 8px; font-size: 10px; font-weight: 600; color: #0f172a;">${escapeHTML(item.scrap_type)}</td>
+                        <td style="padding: 7px 8px; text-align: right; font-size: 10px; color: #334155;">${item.weight.toFixed(2)} kg</td>
+                        <td style="padding: 7px 8px; text-align: right; font-size: 10px; color: #334155;">₹${item.rate.toFixed(2)}</td>
+                        <td style="padding: 7px 8px; text-align: right; font-size: 10px; font-weight: 700; color: #0f172a;">₹${item.amount.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            // Check if GST is applied
+            const showGSTBreakdown = invoice.apply_gst;
+            const gstBreakdownHtml = showGSTBreakdown ? `
+                <tr>
+                    <td style="padding: 5px 10px; color: #64748b; text-align: left;">GST (${invoice.gst_percent}%${invoice.tax_inclusive ? ' Incl.' : ''}):</td>
+                    <td style="padding: 5px 10px; color: #0f172a; font-weight: 700; text-align: right;">₹${invoice.gst_amount.toFixed(2)}</td>
+                </tr>
+            ` : '';
+
+            const billTypeTitle = invoice.bill_type === "GST_INVOICE" ? "TAX INVOICE" : "BILL OF SUPPLY";
+            
+            // Highly polished B2B Corporate single-page layout
+            const pdfTemplate = `
+                <div style="font-family: 'Plus Jakarta Sans', Arial, sans-serif; width: 750px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 0; box-sizing: border-box; color: #1e293b;">
+                    <!-- Invoice Header Table -->
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px;">
+                        <tr>
+                            <td style="width: 60%; vertical-align: top;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                    <img src="${logoBase64}" alt="ScrapK Logo" style="height: 44px; object-fit: contain;">
+                                    <div style="line-height: 1.15;">
+                                        <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.2px;">SCRAPK VENTURES PVT. LTD.</h2>
+                                        <span style="font-size: 9px; font-weight: 700; color: #10b981; letter-spacing: 0.5px; text-transform: uppercase;">Circular Material Logistics</span>
+                                    </div>
+                                </div>
+                                <p style="font-size: 8.5px; color: #64748b; line-height: 1.4; margin: 0; max-width: 320px;">
+                                    <strong>Regd Office:</strong> 43/99 Taj Nagari Phase 2, Opp. Parth Sathi Hospital, Tajganj, Agra - 282001<br>
+                                    <strong>Support:</strong> scrapkventuresprivateltd@gmail.com | +91 9671596013
+                                </p>
+                            </td>
+                            <td style="width: 40%; text-align: right; vertical-align: top;">
+                                <h1 style="font-size: 22px; font-weight: 900; color: #0f172a; margin: 0 0 5px 0; tracking: tight; letter-spacing: -0.5px;">${billTypeTitle}</h1>
+                                <table style="float: right; margin-top: 5px; font-size: 10px; color: #475569; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="font-weight: 600; padding: 2px 6px; text-align: right; color: #64748b; font-size: 9px; text-transform: uppercase;">Invoice No:</td>
+                                        <td style="font-weight: 700; padding: 2px 6px; text-align: left; color: #0f172a; letter-spacing: 0.3px;">${invoice.invoice_number}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 600; padding: 2px 6px; text-align: right; color: #64748b; font-size: 9px; text-transform: uppercase;">Date:</td>
+                                        <td style="font-weight: 600; padding: 2px 6px; text-align: left; color: #0f172a;">${formatDateString(invoice.invoice_date)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 600; padding: 2px 6px; text-align: right; color: #64748b; font-size: 9px; text-transform: uppercase;">Status:</td>
+                                        <td style="padding: 2px 6px; text-align: left;">
+                                            <span style="background-color: #dcfce7; color: #16a34a; padding: 1.5px 6px; border-radius: 4px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; tracking: 0.5px;">PAID</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div style="border-top: 2px solid #0f172a; margin-bottom: 15px;"></div>
+
+                    <!-- Customer & Transaction Information -->
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px;">
+                        <tr>
+                            <!-- Billed To card with stylized left accent border -->
+                            <td style="width: 50%; vertical-align: top; background-color: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; border-left: 4px solid #10b981;">
+                                <h4 style="font-size: 8.5px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 0 0 5px 0; letter-spacing: 0.5px;">Billed To / Customer:</h4>
+                                <p style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; text-transform: uppercase;">${escapeHTML(invoice.customer_name)}</p>
+                                ${invoice.customer_phone ? `<p style="font-size: 10px; color: #475569; margin: 0 0 2px 0;"><strong>Phone:</strong> ${escapeHTML(invoice.customer_phone)}</p>` : ''}
+                                ${invoice.customer_address ? `<p style="font-size: 10px; color: #475569; margin: 0;"><strong>Address:</strong> ${escapeHTML(invoice.customer_address)}</p>` : ''}
+                            </td>
+                            <td style="width: 50%; vertical-align: top; padding: 8px 8px 8px 24px;">
+                                <h4 style="font-size: 8.5px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 0 0 5px 0; letter-spacing: 0.5px;">Transaction Context:</h4>
+                                <p style="font-size: 10px; color: #475569; margin: 0; line-height: 1.45;">
+                                    <strong>Vendor Pickup Ledger</strong><br>
+                                    Material weight validated under calibrated digital scale on site. Ledger registered successfully in ScrapK SQLite database record.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Items Table -->
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden;">
+                        <thead>
+                            <tr style="background-color: #0f172a; color: #ffffff; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px;">
+                                <th style="padding: 8px; font-weight: 700; text-align: center; width: 8%;">Sr.</th>
+                                <th style="padding: 8px; font-weight: 700; text-align: left;">Material Details</th>
+                                <th style="padding: 8px; font-weight: 700; text-align: right; width: 18%;">Net Weight</th>
+                                <th style="padding: 8px; font-weight: 700; text-align: right; width: 18%;">Rate/Kg</th>
+                                <th style="padding: 8px; font-weight: 700; text-align: right; width: 20%;">Total Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemRows}
+                        </tbody>
+                    </table>
+
+                    <!-- Totals and Remarks Table -->
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr>
+                            <td style="width: 55%; vertical-align: top; padding-right: 20px;">
+                                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 8.5px; color: #64748b; line-height: 1.45; background-color: #fafafa;">
+                                    <strong style="color: #475569; display: block; margin-bottom: 4px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px;">Ledger Terms:</strong>
+                                    1. Weight measurements are verified by on-site digital indicators.<br>
+                                    2. HSN code configurations are subject to commercial recycling policies.<br>
+                                    3. Non-GST bills serve as standard corporate bills of supply.<br>
+                                    4. This is a secure system-registered ledger receipt from ScrapK Ventures.
+                                </div>
+                            </td>
+                            <td style="width: 45%; vertical-align: top;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; border: 1px solid #e2e8f0; background-color: #f8fafc; border-radius: 6px;">
+                                    <tr>
+                                        <td style="padding: 6px 10px; color: #64748b; text-align: left;">Subtotal (Base Value):</td>
+                                        <td style="padding: 6px 10px; color: #0f172a; font-weight: 700; text-align: right;">₹${invoice.subtotal.toFixed(2)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 4px 10px; color: #64748b; text-align: left;">Taxable Value:</td>
+                                        <td style="padding: 4px 10px; color: #0f172a; font-weight: 700; text-align: right;">₹${invoice.taxable_value.toFixed(2)}</td>
+                                    </tr>
+                                    ${gstBreakdownHtml}
+                                    <tr style="border-bottom: 1px solid #cbd5e1;">
+                                        <td style="padding: 4px 10px 6px 10px; color: #64748b; text-align: left;">Labour & Transport:</td>
+                                        <td style="padding: 4px 10px 6px 10px; color: #0f172a; font-weight: 700; text-align: right;">₹${invoice.external_fare.toFixed(2)}</td>
+                                    </tr>
+                                    <!-- High-contrast professional totals block -->
+                                    <tr style="background-color: #0f172a; color: #ffffff;">
+                                        <td style="padding: 8px 10px; font-weight: 800; text-align: left; font-size: 11px; text-transform: uppercase;">GRAND TOTAL:</td>
+                                        <td style="padding: 8px 10px; color: #10b981; font-weight: 900; text-align: right; font-size: 14px;">₹${invoice.grand_total.toFixed(2)}</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Authorizations -->
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 9.5px; color: #475569;">
+                        <tr>
+                            <td style="width: 50%; text-align: left; vertical-align: bottom; height: 50px;">
+                                <div style="width: 120px; border-bottom: 1px solid #cbd5e1; margin-bottom: 4px;"></div>
+                                <strong>Receiver's Signature</strong>
+                            </td>
+                            <td style="width: 50%; text-align: right; vertical-align: bottom; height: 50px;">
+                                <div style="display: inline-block; text-align: center;">
+                                    <span style="font-size: 7.5px; color: #94a3b8; display: block; margin-bottom: 25px;">Secure Digital Approval</span>
+                                    <div style="width: 160px; border-bottom: 1px solid #cbd5e1; margin-bottom: 4px;"></div>
+                                    <strong style="color: #0f172a; text-transform: uppercase; font-size: 9px;">For SCRAPK VENTURES PVT. LTD.</strong>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Corporate Footer Message -->
+                    <div style="margin-top: 30px; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px dashed #e2e8f0; padding-top: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Thank you for doing business with ScrapK Ventures Pvt. Ltd.
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = pdfTemplate;
+
+            const opt = {
+                margin:       [0.2, 0.2, 0.2, 0.2], // Smaller margins to maximize printable height
+                filename:     `${invoice.invoice_number}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2.2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(container.firstElementChild).save().then(() => {
+                container.innerHTML = ''; // clean up DOM after build finishes
+            });
+        }
+
+        // Share invoice details on WhatsApp Click-to-Chat
+        function shareInvoiceOnWhatsApp(inv) {
+            if (!inv) return;
+            
+            // Clean phone number: remove non-numeric chars
+            let phone = (inv.customer_phone || '').replace(/\D/g, '');
+            
+            if (!phone) {
+                showToast("This customer does not have a phone number saved.", "error");
+                return;
+            }
+            
+            // If phone starts with 0, strip it
+            if (phone.startsWith('0')) {
+                phone = phone.substring(1);
+            }
+            
+            // If it's 10 digits, assume India (+91)
+            if (phone.length === 10) {
+                phone = '91' + phone;
+            }
+            
+            // Construct material details string
+            let itemsSummary = '';
+            inv.items.forEach((item, index) => {
+                itemsSummary += `\n- *${item.scrap_type}*: ${item.weight.toFixed(2)} kg @ ₹${item.rate.toFixed(2)}/kg = *₹${item.amount.toFixed(2)}*`;
+            });
+            
+            const billTypeLabel = inv.bill_type === "GST_INVOICE" ? "GST Tax Invoice" : "Normal Bill of Supply";
+            const dateFormatted = formatDateString(inv.invoice_date);
+            
+            // Build message text
+            const message = `Hello *${inv.customer_name}*,\n\nHere is your digital bill summary from *ScrapK Ventures Pvt. Ltd.*:\n` +
+                `\n*Invoice No:* ${inv.invoice_number}` +
+                `\n*Date:* ${dateFormatted}` +
+                `\n*Type:* ${billTypeLabel}` +
+                `\n\n*Materials List:*${itemsSummary}` +
+                `\n\n*Subtotal:* ₹${inv.subtotal.toFixed(2)}` +
+                `\n*Labour & Transport:* ₹${inv.external_fare.toFixed(2)}` +
+                `\n*GRAND TOTAL:* *₹${inv.grand_total.toFixed(2)}*` +
+                `\n*Status:* *PAID (System Registered)*\n` +
+                `\nThank you for choosing *ScrapK Ventures*! ♻️`;
+            
+            const encodedText = encodeURIComponent(message);
+            const waUrl = `https://wa.me/${phone}?text=${encodedText}`;
+            
+            // Open in new tab
+            window.open(waUrl, '_blank');
+        }
+
+        // Share invoice helper by ID
+        function shareInvoiceByIdOnWhatsApp(id) {
+            const inv = loadedInvoicesGlobal.find(item => item.id === id);
+            if (inv) {
+                shareInvoiceOnWhatsApp(inv);
+            } else {
+                showToast("Invoice record not found in local cache.", "error");
+            }
+        }
+
+        // Format date string YYYY-MM-DD to DD-MM-YYYY
+        function formatDateString(str) {
+            if (!str) return '';
+            const parts = str.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            return str;
+        }
+
+        // Reset inputs on creation completion
+        function resetForm() {
+            document.getElementById('customer-name').value = '';
+            document.getElementById('customer-phone').value = '';
+            document.getElementById('customer-address').value = '';
+            document.getElementById('apply-gst').checked = false;
+            document.getElementById('gst-percent').value = '18';
+            document.getElementById('tax-inclusive').checked = false;
+            document.getElementById('external-fare').value = '';
+            
+            // clear dynamic scrap card items container back to single empty item
+            const container = document.getElementById('items-container');
+            container.innerHTML = '';
+            
+            // hide configuration block
+            toggleGSTSettings();
+            
+            addItemCard(); // adds default starting item card
+            resetTotalsUI(0, false);
+        }
+
+        // Escape HTML
+        function escapeHTML(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Fetch and load History Ledger List
+        async function loadHistoryList() {
+            const rowsContainer = document.getElementById('history-rows');
+            
+            if (!isOnline) {
+                rowsContainer.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-slate-400">
+                            History ledger is not available because the API server is offline.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiHost}/api/invoices`);
+                if (response.ok) {
+                    const invoices = await response.json();
+                    loadedInvoicesGlobal = invoices;
+                    
+                    if (invoices.length === 0) {
+                        rowsContainer.innerHTML = `
+                            <tr>
+                                <td colspan="7" class="px-6 py-8 text-center text-slate-400">
+                                    No saved invoice records found in database.
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    let tableBody = '';
+                    invoices.forEach(inv => {
+                        const dateFormatted = formatDateString(inv.invoice_date);
+                        const typeBadge = inv.bill_type === "GST_INVOICE"
+                            ? `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">GST</span>`
+                            : `<span class="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded">NORMAL</span>`;
+                        
+                        tableBody += `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-500">${dateFormatted}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-navy-800">${inv.invoice_number}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-700 max-w-[150px] truncate" title="${escapeHTML(inv.customer_name)}">${escapeHTML(inv.customer_name)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-center">${typeBadge}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-right">${inv.gst_percent}%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-right font-bold text-slate-800">₹${inv.grand_total.toFixed(2)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-center space-x-2">
+                                    <button onclick="viewInvoiceDetails(${inv.id})" class="text-brand-600 hover:text-brand-800 font-bold hover:underline transition" title="View details">
+                                        <i class="fa-solid fa-eye"></i> View
+                                    </button>
+                                    <button onclick="downloadInvoiceAgain(${inv.id})" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline transition" title="Download PDF">
+                                        <i class="fa-solid fa-download"></i> PDF
+                                    </button>
+                                    <button onclick="shareInvoiceByIdOnWhatsApp(${inv.id})" class="text-emerald-600 hover:text-emerald-800 font-bold hover:underline transition" title="Share on WhatsApp">
+                                        <i class="fa-brands fa-whatsapp text-emerald-600"></i> WhatsApp
+                                    </button>
+                                    <button onclick="deleteInvoice(${inv.id}, '${inv.invoice_number}')" class="text-rose-600 hover:text-rose-800 font-bold hover:underline transition" title="Delete record">
+                                        <i class="fa-solid fa-trash-can"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    rowsContainer.innerHTML = tableBody;
+                } else {
+                    rowsContainer.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-rose-500">
+                                Failed to fetch history. Status: ${response.status}
+                            </td>
+                        </tr>
+                    `;
+                }
+            } catch (e) {
+                console.error(e);
+                rowsContainer.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-rose-500">
+                            Connection error. Unable to load history list.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // View details in Modal
+        async function viewInvoiceDetails(id) {
+            try {
+                const response = await fetch(`${apiHost}/api/invoices/${id}`);
+                if (response.ok) {
+                    const inv = await response.json();
+                    
+                    document.getElementById('modal-invoice-no').innerText = inv.invoice_number;
+                    document.getElementById('modal-customer-name').innerText = inv.customer_name;
+                    
+                    // compile contact meta
+                    let metaText = 'No phone/address added';
+                    if (inv.customer_phone && inv.customer_address) {
+                        metaText = `Phone: ${inv.customer_phone} | Address: ${inv.customer_address}`;
+                    } else if (inv.customer_phone) {
+                        metaText = `Phone: ${inv.customer_phone}`;
+                    } else if (inv.customer_address) {
+                        metaText = `Address: ${inv.customer_address}`;
+                    }
+                    document.getElementById('modal-customer-meta').innerText = metaText;
+                    document.getElementById('modal-date').innerText = formatDateString(inv.invoice_date);
+                    document.getElementById('modal-bill-type').innerText = inv.bill_type === "GST_INVOICE" ? "GST Invoice" : "Normal Bill";
+                    
+                    // compile items rows
+                    let itemsHtml = '';
+                    inv.items.forEach((item, index) => {
+                        itemsHtml += `
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-4 py-2 text-center text-slate-400 font-bold">${index + 1}</td>
+                                <td class="px-4 py-2 font-semibold text-slate-800">${escapeHTML(item.scrap_type)}</td>
+                                <td class="px-4 py-2 text-right">${item.weight.toFixed(2)} kg</td>
+                                <td class="px-4 py-2 text-right">₹${item.rate.toFixed(2)}</td>
+                                <td class="px-4 py-2 text-right font-bold text-slate-800">₹${item.amount.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById('modal-items').innerHTML = itemsHtml;
+                    
+                    // totals
+                    document.getElementById('modal-subtotal').innerText = `₹${inv.subtotal.toFixed(2)}`;
+                    
+                    const taxRow = document.getElementById('modal-tax-row');
+                    if (inv.apply_gst) {
+                        taxRow.classList.remove('hidden');
+                        document.getElementById('modal-tax-label').innerText = `GST (${inv.gst_percent}%${inv.tax_inclusive ? ' Incl.' : ''}):`;
+                        document.getElementById('modal-tax-val').innerText = `₹${inv.gst_amount.toFixed(2)}`;
+                    } else {
+                        taxRow.classList.add('hidden');
+                    }
+                    
+                    document.getElementById('modal-fare').innerText = `₹${inv.external_fare.toFixed(2)}`;
+                    document.getElementById('modal-grand').innerText = `₹${inv.grand_total.toFixed(2)}`;
+                    
+                    // configure modal action button download
+                    const dlBtn = document.getElementById('modal-btn-download');
+                    dlBtn.onclick = () => {
+                        downloadPDF(inv);
+                    };
+
+                    // configure modal action button WhatsApp
+                    const waBtn = document.getElementById('modal-btn-whatsapp');
+                    waBtn.onclick = () => {
+                        shareInvoiceOnWhatsApp(inv);
+                    };
+
+                    // Display Modal
+                    const modal = document.getElementById('view-modal');
+                    const card = document.getElementById('modal-card');
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                        card.classList.remove('scale-95');
+                        card.classList.add('scale-100');
+                    }, 50);
+
+                } else {
+                    showToast("Failed to fetch details for invoice view.", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Network error. Unable to load invoice details.", "error");
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('view-modal');
+            const card = document.getElementById('modal-card');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 150);
+        }
+
+        // Delete Invoice Record
+        async function deleteInvoice(id, invNo) {
+            if (!confirm(`Are you sure you want to delete invoice ${invNo}? This action is permanent.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiHost}/api/invoices/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showToast(`Invoice ${invNo} deleted successfully.`);
+                    loadHistoryList();
+                } else {
+                    const err = await response.json();
+                    showToast(`Delete failed: ${err.detail || "Unknown error"}`, "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Connection failure. Unable to delete record.", "error");
+            }
+        }
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Set header logo source dynamically
+            const headerLogo = document.getElementById('header-logo');
+            if (headerLogo) {
+                headerLogo.src = logoBase64;
+            }
+            await checkServerStatus();
+            loadHistoryList();
+            
+            // Poll API state every 10 seconds
+            setInterval(async () => {
+                const oldStatus = isOnline;
+                await checkServerStatus();
+                if (oldStatus !== isOnline) {
+                    loadHistoryList();
+                }
+            }, 10000);
+        });
+    </script>
+</body>
+</html>
