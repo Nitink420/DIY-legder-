@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from backend.routers.auth import verify_token
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
@@ -89,7 +90,8 @@ def calculate_invoice(payload: InvoiceCalculateRequest):
         )
 
 @router.post("/invoices", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
-def create_invoice(payload: InvoiceCreateRequest, db: Session = Depends(get_db)):
+def create_invoice(payload: InvoiceCreateRequest, db: Session = Depends(get_db), authorization: str = Header(None)):
+    verify_token(authorization)
     try:
         # Calculate totals
         calc = perform_calculation(
@@ -170,7 +172,8 @@ def create_invoice(payload: InvoiceCreateRequest, db: Session = Depends(get_db))
         )
 
 @router.get("/invoices", response_model=List[InvoiceResponse])
-def list_invoices(db: Session = Depends(get_db)):
+def list_invoices(db: Session = Depends(get_db), authorization: str = Header(None)):
+    verify_token(authorization)
     try:
         # Return all invoices, latest first
         invoices = db.query(Invoice).order_by(Invoice.created_at.desc()).all()
@@ -192,7 +195,8 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
     return invoice
 
 @router.delete("/invoices/{invoice_id}", status_code=status.HTTP_200_OK)
-def delete_invoice(invoice_id: int, db: Session = Depends(get_db)):
+def delete_invoice(invoice_id: int, db: Session = Depends(get_db), authorization: str = Header(None)):
+    verify_token(authorization)
     invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not invoice:
         raise HTTPException(

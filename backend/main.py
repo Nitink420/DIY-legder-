@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from backend.database import engine
 from backend.models.invoice import Base
-from backend.routers import invoice
+from backend.routers import invoice, auth
 
 # Create database tables automatically if they do not exist
 Base.metadata.create_all(bind=engine)
@@ -34,6 +34,7 @@ app.add_middleware(
 
 # Include Router
 app.include_router(invoice.router, prefix="/api", tags=["Invoice"])
+app.include_router(auth.router, prefix="/api", tags=["Auth"])
 
 # Serve logo and static assets from frontend/
 frontend_dir = os.path.join(project_root, "frontend")
