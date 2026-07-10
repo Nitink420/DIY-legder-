@@ -109,54 +109,7 @@
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Login Screen Modal Overlay -->
-    <div id="login-overlay" class="fixed inset-0 z-55 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition duration-300">
-            <!-- Top Banner -->
-            <div class="bg-navy-900 text-white p-6 text-center relative overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-tr from-brand-600/20 to-indigo-500/20 pointer-events-none"></div>
-                <div class="relative z-10 flex flex-col items-center">
-                    <div class="h-14 w-14 bg-white rounded-2xl flex items-center justify-center shadow-md p-1 mb-3">
-                        <img src="/frontend/logo.png" alt="Logo" class="h-full w-full object-contain">
-                    </div>
-                    <h2 class="text-xl font-bold tracking-tight">SCRAPK VENTURES</h2>
-                    <p class="text-xs text-brand-100 mt-1">Admin Portal Secure Login</p>
-                </div>
-            </div>
-
-            <!-- Login Form -->
-            <form id="login-form" class="p-6 sm:p-8 space-y-4">
-                <div>
-                    <label for="login-username" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Username</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                            <i class="fa-solid fa-user"></i>
-                        </span>
-                        <input type="text" id="login-username" required placeholder="Enter username" 
-                               class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent focus:bg-white transition text-sm">
-                    </div>
-                </div>
-
-                <div>
-                    <label for="login-password" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Password</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                            <i class="fa-solid fa-lock"></i>
-                        </span>
-                        <input type="password" id="login-password" required placeholder="Enter password" 
-                               class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent focus:bg-white transition text-sm">
-                    </div>
-                </div>
-
-                <div class="pt-2">
-                    <button type="submit" 
-                            class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-brand-500/20 hover:shadow-brand-500/30 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-shield-halved"></i> Authenticate
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Standalone login system redirects automatically -->
 
     <!-- Header Section -->
     <header class="bg-navy-900 text-white shadow-md sticky top-0 z-40 transition-all duration-300">
@@ -594,52 +547,21 @@
 
         function checkAuthentication() {
             const token = localStorage.getItem('scrapk_session_token');
-            const loginOverlay = document.getElementById('login-overlay');
-            const logoutBtn = document.getElementById('btn-logout');
-            
             if (!token) {
-                loginOverlay.classList.remove('hidden');
-                logoutBtn.classList.add('hidden');
+                window.location.href = '/login.html';
                 return false;
-            } else {
-                loginOverlay.classList.add('hidden');
+            }
+            const logoutBtn = document.getElementById('btn-logout');
+            if (logoutBtn) {
                 logoutBtn.classList.remove('hidden');
-                return true;
             }
-        }
-
-        async function handleLogin(event) {
-            event.preventDefault();
-            const usernameInput = document.getElementById('login-username').value;
-            const passwordInput = document.getElementById('login-password').value;
-            
-            try {
-                const response = await fetch(`${apiHost}/api/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    localStorage.setItem('scrapk_session_token', data.token);
-                    showToast("Authentication successful!");
-                    checkAuthentication();
-                    loadHistoryList();
-                } else {
-                    const err = await response.json();
-                    showToast(err.detail || "Invalid credentials", "error");
-                }
-            } catch (e) {
-                console.error(e);
-                showToast("Connection to Auth API failed.", "error");
-            }
+            return true;
         }
 
         function logout() {
             localStorage.removeItem('scrapk_session_token');
             showToast("Logged out successfully.");
-            checkAuthentication();
+            window.location.href = '/login.html';
         }
 
         // Toast notifications logic
@@ -1585,12 +1507,6 @@
             const headerLogo = document.getElementById('header-logo');
             if (headerLogo) {
                 headerLogo.src = logoBase64;
-            }
-
-            // Bind login form submit
-            const loginForm = document.getElementById('login-form');
-            if (loginForm) {
-                loginForm.addEventListener('submit', handleLogin);
             }
 
             // Verify authentication state

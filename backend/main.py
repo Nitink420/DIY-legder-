@@ -55,3 +55,11 @@ def invoice_view():
     if os.path.exists(invoice_path):
         return FileResponse(invoice_path)
     return {"message": "Invoice viewer page not found."}
+
+@app.get("/login")
+@app.get("/login.html")
+def login_view():
+    login_path = os.path.join(frontend_dir, "login.html")
+    if os.path.exists(login_path):
+        return FileResponse(login_path)
+    return {"message": "Login page not found."}
