@@ -1271,27 +1271,31 @@
                     container.innerHTML = '';
                     container.style.zIndex = '-9999';
 
-                    const pdfFile = new File([pdfBlob], `${inv.invoice_number}.pdf`, { type: 'application/pdf' });
+                    // Step 1: Auto-download the PDF to device
+                    const downloadUrl = URL.createObjectURL(pdfBlob);
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = downloadUrl;
+                    downloadLink.download = `${inv.invoice_number}.pdf`;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    URL.revokeObjectURL(downloadUrl);
 
-                    // Try native share with PDF file
-                    if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-                        await navigator.share({
-                            files: [pdfFile],
-                            title: `Invoice ${inv.invoice_number}`,
-                            text: `Invoice from ScrapK Ventures for ${inv.customer_name}`
-                        });
-                        showToast("PDF shared successfully!", "success");
-                    } else {
-                        // Fallback: open WhatsApp text chat
-                        showToast("PDF sharing not supported. Opening WhatsApp chat...", "info");
-                        const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(`Invoice ${inv.invoice_number} - ₹${inv.grand_total.toFixed(2)} for ${inv.customer_name}`)}`;
+                    // Step 2: Open WhatsApp chat directly with that customer's number
+                    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(`📎 Invoice ${inv.invoice_number} - ₹${inv.grand_total.toFixed(2)}\nPDF invoice download ho chuki hai, 📎 icon press karke attach karein.`)}`;
+                    
+                    showToast("✅ PDF downloaded! WhatsApp chat khul rahi hai — 📎 se PDF attach karein", "success");
+
+                    // Small delay to let download complete before redirecting
+                    setTimeout(() => {
                         openFallbackWhatsApp(waUrl);
-                    }
+                    }, 800);
+
                 } catch (err) {
                     console.error("Share error:", err);
                     container.innerHTML = '';
                     container.style.zIndex = '-9999';
-                    showToast("Share cancelled or failed.", "error");
+                    showToast("PDF generation failed. Please try again.", "error");
                 }
             }, 500);
         }
