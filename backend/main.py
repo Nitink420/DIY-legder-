@@ -46,3 +46,11 @@ def home():
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"message": "ScrapK Ventures B2B Invoice API is online. Frontend not found."}
+
+@app.get("/invoice")
+@app.get("/invoice.html")
+def invoice_view():
+    invoice_path = os.path.join(frontend_dir, "invoice.html")
+    if os.path.exists(invoice_path):
+        return FileResponse(invoice_path)
+    return {"message": "Invoice viewer page not found."}
