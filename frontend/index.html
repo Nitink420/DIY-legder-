@@ -1055,8 +1055,8 @@
             const opt = {
                 margin:       [0.2, 0.2, 0.2, 0.2], // Smaller margins to maximize printable height
                 filename:     `${invoice.invoice_number}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2.2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+                image:        { type: 'png' },
+                html2canvas:  { scale: 1.5, useCORS: false, logging: false, backgroundColor: '#ffffff' },
                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
             };
 
@@ -1117,15 +1117,8 @@
             const encodedText = encodeURIComponent(message);
             const waUrl = `https://wa.me/${phone}?text=${encodedText}`;
 
-            showToast("Downloading PDF & opening WhatsApp...", "info");
-            
-            // Download PDF directly (uses robust downloadPDF with layout fix)
-            downloadPDF(inv);
-
-            // Wait 1.5 seconds for download to trigger, then open specific chat directly
-            setTimeout(() => {
-                openFallbackWhatsApp(waUrl);
-            }, 1500);
+            showToast("Opening WhatsApp...", "info");
+            openFallbackWhatsApp(waUrl);
         }
 
         // Helper to handle standard WhatsApp redirection
