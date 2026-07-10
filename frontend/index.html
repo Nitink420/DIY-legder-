@@ -1290,7 +1290,7 @@
 
                 // Wait 150ms for reflow, then capture blob
                 setTimeout(() => {
-                    html2pdf().set(opt).from(container.firstElementChild).outputPdf('blob').then(async (pdfBlob) => {
+                    html2pdf().set(opt).from(container.firstElementChild).output('blob').then(async (pdfBlob) => {
                         container.innerHTML = ''; // clean up DOM
 
                         const pdfFile = new File([pdfBlob], `${inv.invoice_number}.pdf`, { type: 'application/pdf' });
