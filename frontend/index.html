@@ -77,6 +77,33 @@
             from { transform: translateY(-1rem); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+        @media print {
+            header, #toast-container, main, footer, .glass-card, button, p {
+                display: none !important;
+            }
+            body > *:not(#pdf-rendering-container) {
+                display: none !important;
+            }
+            #pdf-rendering-container {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                background: #ffffff !important;
+                color: #1e293b !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                z-index: 9999999 !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col font-sans">
@@ -1085,31 +1112,10 @@
 
             container.innerHTML = pdfTemplate;
 
-            // Temporarily show container on top of screen for browser to execute full layout & paint
-            container.style.zIndex = '99999';
-            container.style.position = 'fixed';
-            container.style.top = '0';
-            container.style.left = '0';
-            container.style.background = '#ffffff';
-            container.style.colorScheme = 'light';
-
-            const opt = {
-                margin:       [0.2, 0.2, 0.2, 0.2], // Smaller margins to maximize printable height
-                filename:     `${invoice.invoice_number}.pdf`,
-                image:        { type: 'png' },
-                html2canvas:  { scale: 1.5, useCORS: false, logging: false, backgroundColor: '#ffffff' },
-                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-            };
-
-            // Wait 500ms for full mobile device paint/layout reflow, then save and hide back
+            // Use browser native printing - 100% reliable vector PDF generation
             setTimeout(() => {
-                html2pdf().set(opt).from(container.firstElementChild).save().then(() => {
-                    container.innerHTML = ''; // clean up DOM after build finishes
-                    container.style.zIndex = '-9999';
-                    container.style.position = 'fixed';
-                    container.style.colorScheme = '';
-                });
-            }, 500);
+                window.print();
+            }, 150);
         }
 
         // Share invoice details on WhatsApp Click-to-Chat / Native File Sharing
@@ -1428,6 +1434,13 @@
         }
 
         // Initialization
+        window.addEventListener('afterprint', () => {
+            const container = document.getElementById('pdf-rendering-container');
+            if (container) {
+                container.innerHTML = '';
+            }
+        });
+
         window.addEventListener('DOMContentLoaded', async () => {
             // Set header logo source dynamically
             const headerLogo = document.getElementById('header-logo');
